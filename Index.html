@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner | Bharat's Best Education Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5a4bda;
+            --primary-dark: #4338ca;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --overlay: rgba(15, 23, 42, 0.7);
+            --error: #ef4444;
+            --success: #22c55e;
+            --blind-accent: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; transition: 0.2s ease; }
+        body { background: var(--white); color: var(--text-main); line-height: 1.5; overflow-x: hidden; }
+
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+        :focus { outline: 3px solid var(--blind-accent); outline-offset: 2px; }
+
+        /* --- ROLE SELECTION --- */
+        #rolePortal {
+            position: fixed; inset: 0; background: var(--primary); z-index: 3000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; text-align: center; padding: 20px;
+        }
+        .portal-container { max-width: 800px; }
+        .portal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 40px; width: 100%; }
+        
+        .role-card {
+            background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+            padding: 40px; border-radius: 24px; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center;
+            text-decoration: none; color: inherit; width: 100%; border: none;
+        }
+        .role-card:hover, .role-card:focus { background: white; color: var(--primary); transform: translateY(-10px); outline: none; }
+        .role-card h3 { font-size: 24px; margin: 20px 0 10px; }
+        .role-icon { font-size: 60px; }
+
+        /* --- NAVIGATION --- */
+        nav {
+            height: 72px; display: none; justify-content: space-between; align-items: center;
+            padding: 0 8%; border-bottom: 1px solid var(--border); position: sticky; top: 0;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); z-index: 1000;
+        }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .logo { font-size: 24px; font-weight: 800; color: var(--primary); cursor: pointer; }
+        .nav-right { display: flex; gap: 15px; }
+
+        .btn-nav {
+            display: flex; align-items: center; gap: 8px; padding: 10px 20px;
+            border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer;
+        }
+        .btn-login { border: 1.5px solid var(--primary); color: var(--primary); background: transparent; }
+        .btn-register { background: var(--primary); color: white; border: none; }
+        
+        #navBackBtn { 
+            background: none; border: none; color: var(--text-sub); 
+            font-weight: 600; cursor: pointer; display: none; align-items: center; gap: 5px;
+        }
+
+        /* --- HERO --- */
+        #landingPage { display: none; }
+        .hero {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 80px 8%; min-height: calc(100vh - 72px);
+            background: radial-gradient(circle at top right, #f5f3ff, #fff);
+        }
+        .hero-text h1 { font-size: 56px; font-weight: 800; line-height: 1.1; margin-bottom: 20px; }
+        .hero-text h1 span { color: var(--primary); }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            position: fixed; inset: 0; background: var(--overlay);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+            backdrop-filter: blur(4px);
+        }
+        .modal-card {
+            background: white; width: 90%; max-width: 440px;
+            padding: 35px; border-radius: 28px; position: relative;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .close-modal { 
+            position: absolute; top: 20px; right: 20px; border: none;
+            cursor: pointer; color: var(--text-sub); font-size: 22px; width: 32px; height: 32px;
+            border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center;
+        }
+
+        .tabs { display: flex; background: #f1f5f9; padding: 5px; border-radius: 12px; margin: 15px 0; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; border-radius: 8px; font-size: 14px; border: none; background: none; }
+        .tab.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-sub); }
+        input, select {
+            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+            border-radius: 10px; font-size: 15px; outline: none; background: white;
+        }
+
+        .btn-submit {
+            width: 100%; padding: 14px; background: var(--primary); color: white;
+            border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* --- DASHBOARD & PORTALS --- */
+        #dashboard, #portalSelection, #detailedSelection { display: none; padding: 40px 8%; text-align: center; }
+        .stat-card { background: #f8fafc; padding: 30px; border-radius: 20px; border: 1px solid var(--border); }
+        
+        .subject-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px; margin-top: 20px; text-align: left;
+        }
+        .subject-item {
+            background: #f1f5f9; padding: 12px; border-radius: 10px; 
+            display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px;
+        }
+
+        /* --- AI FAB --- */
+        .ai-fab {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 65px; height: 65px; background: var(--primary);
+            border-radius: 50%; display: none; justify-content: center; align-items: center;
+            font-size: 30px; color: white; cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 5000; border: 4px solid white;
+        }
+        .pulse { position: absolute; width: 100%; height: 100%; border-radius: 50%; background: var(--primary); opacity: 0.6; animation: ai-pulse 2s infinite; z-index: -1; }
+        @keyframes ai-pulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.6); opacity: 0; } }
+        .blind-fab { width: 100px; height: 100px; font-size: 50px; background: var(--blind-accent) !important; }
+
+        /* --- QUIZ OVERLAY --- */
+        #quizOverlay {
+            flex-direction: column; color: white; text-align: center; padding: 40px; background: #1e293b;
+        }
+        .quiz-container { max-width: 600px; width: 100%; }
+        .listening-indicator { font-size: 24px; margin-top: 20px; font-weight: 700; color: var(--blind-accent); }
+        .quiz-options-list { margin-top: 20px; text-align: left; list-style: none; }
+        .quiz-option { 
+            background: rgba(255,255,255,0.1); margin-bottom: 10px; padding: 15px; 
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); font-size: 18px;
+        }
+
+        /* --- VOICE SETUP OVERLAY --- */
+        #voiceSetupOverlay {
+            position: fixed; inset: 0; background: #0f172a; color: white; z-index: 4000;
+            display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .hero { flex-direction: column; text-align: center; padding-top: 40px; }
+            .hero-text h1 { font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="rolePortal">
+    <div class="portal-container">
+        <h1 style="font-size: 48px; font-weight: 800;">Welcome to Study Planner</h1>
+        <p style="font-size: 18px; opacity: 0.9; margin-top: 10px;">India's smart education companion. Choose your mode:</p>
+        <div class="portal-grid">
+            <button class="role-card" onclick="selectRole('blind')">
+                <div class="role-icon">🎙️</div>
+                <h3>Blind Student</h3>
+                <p>Voice Setup & Audio Quizzes</p>
+            </button>
+            <button class="role-card" onclick="selectRole('student')">
+                <div class="role-icon">📖</div>
+                <h3>General Student</h3>
+                <p>Visual Tools & Academic Portals</p>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="voiceSetupOverlay">
+    <h1 id="voiceStatusTitle" style="font-size: 32px; color: var(--blind-accent);">Profile Setup</h1>
+    <p id="voiceInstruction" style="font-size: 24px; margin: 20px 0; max-width: 600px;">Please wait...</p>
+    <div class="pulse" style="position: relative; width: 120px; height: 120px; margin: 40px auto;"></div>
+    <p id="voiceLiveFeedback" style="font-style: italic; opacity: 0.7;">Listening...</p>
+</div>
+
+<nav id="mainNav">
+    <div class="nav-left">
+        <div class="logo" onclick="location.reload()">Study Planner</div>
+        <button id="navBackBtn" onclick="handlePhysicalBack()">← Back</button>
+    </div>
+    <div class="nav-right" id="authNavButtons">
+        <button class="btn-nav btn-login" onclick="openAuthModal('login')">Login</button>
+        <button class="btn-nav btn-register" onclick="openAuthModal('register')">Register</button>
+    </div>
+</nav>
+
+<main id="landingPage">
+    <section class="hero">
+        <div class="hero-text">
+            <h1 id="heroTitle">Your Journey to <span>Success</span> Starts Here.</h1>
+            <p style="color:var(--text-sub); margin-bottom:30px;">The ultimate planning tool for acing Board Exams, JEE, NEET, and College Finals.</p>
+            <button class="btn-nav btn-register" style="padding: 18px 40px; font-size: 18px;" onclick="openAuthModal('register')">Get Started for Free</button>
+        </div>
+        <div style="font-size: 150px;">🚀</div>
+    </section>
+</main>
+
+<div class="modal-overlay" id="authModal" onclick="if(event.target===this) closeAuthModal()">
+    <div class="modal-card">
+        <button class="close-modal" onclick="closeAuthModal()">&times;</button>
+        <h2 id="modalTitle">Login</h2>
+        <div id="authFormContent">
+            <div class="tabs">
+                <button id="tMob" class="tab active" onclick="setAuthMethod('mobile')">Mobile</button>
+                <button id="tGml" class="tab" onclick="setAuthMethod('email')">Gmail</button>
+            </div>
+            <div id="regFields" style="display: none;">
+                <div class="input-group"><label>Full Name</label><input type="text" id="uName" placeholder="Rahul Sharma"></div>
+            </div>
+            <div class="input-group" id="mobArea">
+                <label>Mobile Number</label>
+                <div style="display:flex; gap:10px;">
+                    <div style="padding: 12px; background: #f1f5f9; border-radius: 10px; font-weight: 700; border: 1.5px solid var(--border);">+91</div>
+                    <input type="tel" id="uPhone" placeholder="10-digit number" maxlength="10">
+                </div>
+            </div>
+            <div class="input-group" id="emlArea" style="display: none;">
+                <label>Email Address</label><input type="email" id="uEmail" placeholder="name@gmail.com">
+            </div>
+            <div class="input-group"><label>Password</label><input type="password" id="uPass" placeholder="••••••••"></div>
+        </div>
+        <div id="otpFormContent" style="display: none;">
+            <p style="color: var(--success); margin-bottom: 10px;">✓ OTP sent to your device</p>
+            <div class="input-group">
+                <label>Enter 6-Digit OTP</label>
+                <input type="text" id="uOtp" placeholder="000000" maxlength="6" style="letter-spacing: 8px; text-align: center; font-size: 20px;">
+            </div>
+        </div>
+        <button class="btn-submit" id="submitBtn" onclick="handleAuthSubmit()">Login</button>
+    </div>
+</div>
+
+<div id="portalSelection" class="page-view">
+    <h2 style="font-size: 32px; margin-bottom: 10px;">Select Your Academic Path</h2>
+    <div class="portal-grid">
+        <div class="role-card" onclick="showSubPortal('school')" style="background: #f8fafc; border: 1px solid var(--border); color: var(--text-main);">
+            <div class="role-icon">🎒</div>
+            <h3>School Portal</h3>
+            <p>Classes 6th to 12th</p>
+        </div>
+        <div class="role-card" onclick="showSubPortal('college')" style="background: #f8fafc; border: 1px solid var(--border); color: var(--text-main);">
+            <div class="role-icon">🎓</div>
+            <h3>College Portal</h3>
+            <p>B.Tech, MCA, B.Sc & More</p>
+        </div>
+    </div>
+</div>
+
+<div id="detailedSelection" class="page-view" style="max-width: 800px; margin: 0 auto;">
+    <h2 id="detailTitle">Setup Your Profile</h2>
+    <div class="input-group" style="margin-top:20px;">
+        <label id="levelLabel">Select Class/Level</label>
+        <select id="levelSelect"></select>
+    </div>
+    <div class="input-group">
+        <label>Select Your Subjects</label>
+        <div id="subjectGrid" class="subject-grid"></div>
+    </div>
+    <button class="btn-submit" onclick="finishSetup()">Go to My Dashboard</button>
+</div>
+
+<div id="dashboard" class="page-view">
+    <h1 id="dashWelcome">Welcome, <span id="userDisp" style="color:var(--primary)">Achiever</span>!</h1>
+    <p id="activePath" style="font-weight: 600; color: var(--text-sub); margin-bottom: 30px;"></p>
+    
+    <div id="voiceTestSection" style="margin-bottom: 30px;">
+        <button class="btn-submit" id="quizStartBtn" onclick="startVoiceQuizFlow()" style="background: var(--blind-accent); font-size: 20px; padding: 20px;">
+            🎙️ Start MCQ Practice Test
+        </button>
+    </div>
+
+    <div class="portal-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="stat-card"><h3>05</h3><p>Tasks</p></div>
+        <div class="stat-card"><h3>120</h3><p>Mins</p></div>
+        <div class="stat-card"><h3>12</h3><p>Rank</p></div>
+    </div>
+    <div id="subjectChips" style="margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;"></div>
+    <button class="btn-nav btn-login" style="margin: 40px auto;" onclick="logout()">Logout / Reset</button>
+</div>
+
+<div id="quizOverlay" class="modal-overlay">
+    <div class="quiz-container">
+        <h2 id="quizQuestionDisplay" style="font-size: 28px; margin-bottom: 20px;">Setting up...</h2>
+        <div id="optionsDisplay" class="quiz-options-list"></div>
+        <div class="pulse" style="position: relative; width: 80px; height: 80px; margin: 20px auto;"></div>
+        <p id="listeningStatus" class="listening-indicator">Initialising...</p>
+        <button class="btn-nav btn-login" style="margin-top: 40px; background: white; color: var(--primary); width: 100%;" onclick="endQuiz()">Exit Quiz</button>
+    </div>
+</div>
+
+<button class="ai-fab" id="aiAssistant" onclick="handleAiClick()">
+    <div class="pulse"></div>
+    <span id="aiIcon">🤖</span>
+</button>
+
+<script>
+    /* --- STATE & HISTORY --- */
+    let userProfile = { name: '', role: 'student', authStatus: false, portal: '', level: '', subjects: [] };
+    let currentAuthMode = 'login'; 
+    let isOtpStep = false;
+    let setupStep = 0; 
+    let navigationStack = ['landingPage'];
+    const VIEWS = ['landingPage', 'portalSelection', 'detailedSelection', 'dashboard'];
+
+    const portalData = {
+        school: {
+            levels: ["Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"],
+            subjects: ["Mathematics", "Science", "English", "Physics", "Chemistry", "Biology"]
+        },
+        college: {
+            levels: ["B.Tech", "M.Tech", "BCA", "MCA"],
+            subjects: ["Data Structures", "Algorithms", "Operating Systems", "DBMS"]
+        }
+    };
+
+    const mcqBank = [
+        { q: "Which gas is released when a metal reacts with an acid?", options: ["A: Oxygen", "B: Hydrogen", "C: Nitrogen", "D: Helium"], a: "b", level: "Class 10", subject: "Science" },
+        { q: "What is the pH value of a neutral solution?", options: ["A: 1", "B: 5", "C: 7", "D: 14"], a: "c", level: "Class 10", subject: "Science" },
+        { q: "What is the value of sin 90 degrees?", options: ["A: 0", "B: 0.5", "C: 1", "D: 2"], a: "c", level: "Class 10", subject: "Mathematics" },
+        { q: "What is the SI unit of Electric Charge?", options: ["A: Volt", "B: Ampere", "C: Coulomb", "D: Watt"], a: "c", level: "Class 12", subject: "Physics" },
+        { q: "Which data structure works on the LIFO principle?", options: ["A: Queue", "B: Stack", "C: Linked List", "D: Tree"], a: "b", level: "B.Tech", subject: "Data Structures" },
+        { q: "What is the time complexity of searching in a Hash Table?", options: ["A: O(1)", "B: O(n)", "C: O(log n)", "D: O(n^2)"], a: "a", level: "B.Tech", subject: "Data Structures" }
+    ];
+
+    let recognition;
+    let currentQuizIndex = 0;
+    let score = 0;
+    let activeQuizSet = [];
+
+    window.onload = () => { initSpeechRecognition(); };
+
+    function initSpeechRecognition() {
+        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (window.SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-IN';
+            recognition.interimResults = false;
+        }
+    }
+
+    /* --- NAVIGATION --- */
+    function navigateTo(target, isBack = false) {
+        VIEWS.forEach(v => document.getElementById(v).style.display = (v === target) ? 'block' : 'none');
+        document.getElementById('navBackBtn').style.display = (target === 'landingPage') ? 'none' : 'flex';
+        if (!isBack && navigationStack[navigationStack.length-1] !== target) navigationStack.push(target);
+    }
+
+    function handlePhysicalBack() {
+        if (userProfile.role === 'blind') handleVoiceBack();
+        else {
+            navigationStack.pop();
+            navigateTo(navigationStack[navigationStack.length-1] || 'landingPage', true);
+        }
+    }
+
+    function handleVoiceBack() {
+        if (navigationStack.length > 1) {
+            navigationStack.pop();
+            const prevView = navigationStack[navigationStack.length - 1];
+            window.speechSynthesis.cancel();
+            document.getElementById('quizOverlay').style.display = 'none';
+            document.getElementById('voiceSetupOverlay').style.display = 'none';
+            speak("Going back.");
+            if (setupStep > 0) setupStep--;
+            navigateTo(prevView, true);
+        }
+    }
+
+    /* --- VOICE ENGINE --- */
+    function listen(callback) {
+        if (!recognition) return;
+        recognition.start();
+        recognition.onresult = (e) => {
+            const transcript = e.results[0][0].transcript.toLowerCase();
+            document.getElementById('voiceLiveFeedback').innerText = `Heard: ${transcript}`;
+            if (transcript.includes("back")) { handleVoiceBack(); return; }
+            callback(transcript);
+        };
+        recognition.onerror = () => {
+            recognition.stop();
+            setTimeout(() => { 
+                if(document.getElementById('quizOverlay').style.display === 'flex' || 
+                   document.getElementById('voiceSetupOverlay').style.display === 'flex') listen(callback);
+            }, 1000);
+        };
+    }
+
+    function speak(text, callback) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'en-IN';
+        if (callback) msg.onend = callback;
+        window.speechSynthesis.speak(msg);
+        if (document.getElementById('voiceInstruction')) document.getElementById('voiceInstruction').innerText = text;
+    }
+
+    /* --- UPDATED SETUP FLOW FOR BLIND STUDENTS --- */
+    function startVoiceSetupWizard() {
+        document.getElementById('voiceSetupOverlay').style.display = 'flex';
+        setupStep = 0;
+        userProfile.level = '';
+        userProfile.subjects = [];
+        runSetupStep();
+    }
+
+    function runSetupStep() {
+        document.getElementById('voiceSetupOverlay').style.display = 'flex';
+        if (setupStep === 0) {
+            speak("Welcome. Please tell me, are you in School or College?", () => listen(handlePortalVoice));
+        } else if (setupStep === 1) {
+            const prompt = userProfile.portal === 'school' ? "Which class? Say Class 6 to 12." : "Which course? B Tech, M Tech, B C A or M C A?";
+            speak(prompt, () => listen(handleLevelVoice));
+        } else if (setupStep === 2) {
+            const subs = portalData[userProfile.portal].subjects;
+            speak(`Available subjects are: ${subs.join(", ")}. Please say one subject to confirm.`, () => listen(handleSubjectVoice));
+        }
+    }
+
+    function handlePortalVoice(text) {
+        if (text.includes("school")) { userProfile.portal = "school"; setupStep = 1; runSetupStep(); }
+        else if (text.includes("college")) { userProfile.portal = "college"; setupStep = 1; runSetupStep(); }
+        else speak("Please say School or College.", () => listen(handlePortalVoice));
+    }
+
+    function handleLevelVoice(text) {
+        const data = portalData[userProfile.portal].levels;
+        let match = data.find(l => text.replace(/\s/g, '').includes(l.toLowerCase().replace(/\s/g, '').replace(".", "")));
+        
+        if (!match && userProfile.portal === 'school') {
+            const num = text.match(/\d+/);
+            if(num) match = "Class " + num[0];
+        }
+
+        if (match) { 
+            userProfile.level = match; 
+            speak(`You selected ${match}. Is this correct?`, () => listen((ans) => {
+                if(ans.includes("yes") || ans.includes("correct") || ans.includes("yeah")) { 
+                    // MANDATORY: Move to Subject Selection
+                    setupStep = 2; 
+                    runSetupStep(); 
+                }
+                else {
+                    userProfile.level = '';
+                    runSetupStep();
+                }
+            }));
+        }
+        else speak("Level not recognized. Try again.", () => listen(handleLevelVoice));
+    }
+
+    function handleSubjectVoice(text) {
+        const subs = portalData[userProfile.portal].subjects;
+        let match = subs.find(s => text.toLowerCase().includes(s.toLowerCase()));
+        
+        if (match) {
+            speak(`You picked ${match}. Is this correct?`, () => listen((ans) => {
+                if (ans.includes("yes") || ans.includes("correct") || ans.includes("yeah")) {
+                    userProfile.subjects = [match]; 
+                    speak(`Great. Profile complete with ${match}. Redirecting to dashboard.`, () => {
+                        document.getElementById('voiceSetupOverlay').style.display = 'none';
+                        finishSetup();
+                    });
+                } else {
+                    runSetupStep(); 
+                }
+            }));
+        } else {
+            speak("I didn't catch that. Please name one of the subjects.", () => listen(handleSubjectVoice));
+        }
+    }
+
+    /* --- QUIZ ENGINE --- */
+    function startVoiceQuizFlow() {
+        if (!userProfile.level || userProfile.subjects.length === 0) {
+            const msg = "I need to know your class and subject first.";
+            speak(msg, () => startVoiceSetupWizard());
+            return;
+        }
+
+        activeQuizSet = mcqBank.filter(item => 
+            item.level === userProfile.level && 
+            userProfile.subjects.includes(item.subject)
+        );
+
+        if (activeQuizSet.length === 0) {
+            const err = `No questions found for ${userProfile.level} ${userProfile.subjects[0]}. For this demo, try Class 10 Science.`;
+            speak(err);
+            return;
+        }
+
+        currentQuizIndex = 0; score = 0;
+        document.getElementById('quizOverlay').style.display = 'flex';
+        speak("Starting quiz now.", () => askMcqQuestion());
+    }
+
+    function askMcqQuestion() {
+        if (currentQuizIndex < activeQuizSet.length) {
+            const data = activeQuizSet[currentQuizIndex];
+            document.getElementById('quizQuestionDisplay').innerText = data.q;
+            document.getElementById('optionsDisplay').innerHTML = data.options.map(opt => `<div class="quiz-option">${opt}</div>`).join('');
+            
+            const speech = `Question ${currentQuizIndex + 1}: ${data.q}. ${data.options.join(". ")}. Say Option A, B, C, or D.`;
+            speak(speech, () => listen(evaluateAnswer));
+        } else {
+            speak(`Quiz complete. You scored ${score} out of ${activeQuizSet.length}.`, () => endQuiz());
+        }
+    }
+
+    function evaluateAnswer(input) {
+        const correct = activeQuizSet[currentQuizIndex].a;
+        let userPick = "";
+        if (input.includes("option a") || input === "a") userPick = "a";
+        else if (input.includes("option b") || input === "b") userPick = "b";
+        else if (input.includes("option c") || input === "c") userPick = "c";
+        else if (input.includes("option d") || input === "d") userPick = "d";
+
+        if (userPick === correct) {
+            score++;
+            speak("Correct!", () => { currentQuizIndex++; askMcqQuestion(); });
+        } else if (userPick === "") {
+            speak("Please say A, B, C or D.", () => listen(evaluateAnswer));
+        } else {
+            speak(`Incorrect. The answer was ${correct.toUpperCase()}.`, () => { currentQuizIndex++; askMcqQuestion(); });
+        }
+    }
+
+    /* --- UI HANDLERS --- */
+    function selectRole(role) {
+        userProfile.role = role;
+        document.getElementById('rolePortal').style.display = 'none';
+        document.getElementById('mainNav').style.display = 'flex';
+        if(role === 'blind') {
+            document.documentElement.style.setProperty('--primary', '#f59e0b');
+            speak("Blind mode active. Please login or register to continue.");
+        }
+        navigateTo('landingPage');
+    }
+
+    function handleAuthSubmit() {
+        if (!isOtpStep) {
+            isOtpStep = true;
+            updateModalUI();
+            if(userProfile.role === 'blind') speak("OTP sent. Please enter the code.");
+        } else {
+            userProfile.name = document.getElementById('uName').value || "Achiever";
+            userProfile.authStatus = true;
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('userDisp').innerText = userProfile.name;
+            if (userProfile.role === 'blind') startVoiceSetupWizard();
+            else navigateTo('portalSelection');
+        }
+    }
+
+    function showSubPortal(type) {
+        userProfile.portal = type;
+        const data = portalData[type];
+        document.getElementById('levelSelect').innerHTML = data.levels.map(l => `<option value="${l}">${l}</option>`).join('');
+        document.getElementById('subjectGrid').innerHTML = data.subjects.map(s => `<div class="subject-item"><input type="checkbox" name="subs" value="${s}"> ${s}</div>`).join('');
+        navigateTo('detailedSelection');
+    }
+
+    function finishSetup() {
+        if (userProfile.role !== 'blind') {
+            userProfile.level = document.getElementById('levelSelect').value;
+            userProfile.subjects = Array.from(document.querySelectorAll('input[name="subs"]:checked')).map(c => c.value);
+        }
+        document.getElementById('activePath').innerText = `${userProfile.portal.toUpperCase()} | ${userProfile.level}`;
+        document.getElementById('subjectChips').innerHTML = userProfile.subjects.map(s => `<span style="background:var(--primary); color:white; padding:5px 15px; border-radius:20px; font-size:12px;">${s}</span>`).join('');
+        navigateTo('dashboard');
+        document.getElementById('aiAssistant').style.display = 'flex';
+        if(userProfile.role === 'blind') {
+            document.getElementById('aiAssistant').classList.add('blind-fab');
+            speak("Profile finalized. Tap the orange button to start your MCQ test.");
+        }
+    }
+
+    function openAuthModal(mode) { currentAuthMode = mode; isOtpStep = false; updateModalUI(); document.getElementById('authModal').style.display = 'flex'; }
+    function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+    function updateModalUI() {
+        document.getElementById('regFields').style.display = currentAuthMode === 'register' ? 'block' : 'none';
+        document.getElementById('otpFormContent').style.display = isOtpStep ? 'block' : 'none';
+        document.getElementById('authFormContent').style.display = isOtpStep ? 'none' : 'block';
+        document.getElementById('submitBtn').innerText = isOtpStep ? "Verify" : (currentAuthMode === 'login' ? "Login" : "Register");
+    }
+    function setAuthMethod(m) {
+        document.getElementById('mobArea').style.display = m === 'mobile' ? 'block' : 'none';
+        document.getElementById('emlArea').style.display = m === 'email' ? 'block' : 'none';
+    }
+    function logout() { location.reload(); }
+    function endQuiz() { document.getElementById('quizOverlay').style.display = 'none'; window.speechSynthesis.cancel(); }
+    function handleAiClick() { if(userProfile.role === 'blind') speak("How can I help you today?"); else alert("AI Ready!"); }
+</script>
+
+</body>
+</html>
